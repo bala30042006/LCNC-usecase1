@@ -1,11 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
+import './Fertility.css';
 
 // Import components
 import PatientDetailsPage from './components/PatientDetailsPage';
 import PatientProfilePage from './components/PatientProfilePage';
 import ReportGenerationPage from './components/ReportGenerationPage';
 import ReportPreviewPage from './components/ReportPreviewPage';
+import FertilityPage from './components/FertilityPage';
+import FertilityCreatePage from './components/FertilityCreatePage';
+import FertilityFillPage from './components/FertilityFillFormPage';
+import FertilityTemplateEditor from './components/FertilityTemplateEditor';
 
 // Main App component with navigation matching the workflow
 function App() {
@@ -41,15 +46,10 @@ function App() {
         textAlign: 'center',
         marginBottom: '1rem'
       }}>
-        A.S.C.A.S
+        I.N.H.M.S
       </div>
       <div className="nav-links">
-        <a 
-          href="#dashboard"
-          className={`nav-link ${currentPage === 'dashboard' ? 'active' : ''}`}
-        >
-          📊 Dashboard
-        </a>
+
         <a 
           href="#patient-details"
           className={`nav-link ${currentPage === 'patient-details' ? 'active' : ''}`}
@@ -74,54 +74,14 @@ function App() {
         >
           📄 Report Preview
         </a>
-        <a 
-          href="#billing"
-          className={`nav-link ${currentPage === 'billing' ? 'active' : ''}`}
-        >
-          💰 Patient Billing
-        </a>
-        <a 
-          href="#appointment"
-          className={`nav-link ${currentPage === 'appointment' ? 'active' : ''}`}
-        >
-          📅 Appointment
-        </a>
-        <a 
-          href="#users"
-          className={`nav-link ${currentPage === 'users' ? 'active' : ''}`}
-        >
-          👤 User List
-        </a>
-        <a 
-          href="#inventory"
-          className={`nav-link ${currentPage === 'inventory' ? 'active' : ''}`}
-        >
-          💊 Drug Inventory
-        </a>
-        <a 
-          href="#inpatient"
-          className={`nav-link ${currentPage === 'inpatient' ? 'active' : ''}`}
-        >
-          🏥 In Patient
-        </a>
+
         <a 
           href="#fertility"
           className={`nav-link ${currentPage === 'fertility' ? 'active' : ''}`}
         >
           🍼 Fertility
         </a>
-        <a 
-          href="#reports"
-          className={`nav-link ${currentPage === 'reports' ? 'active' : ''}`}
-        >
-          📊 Report
-        </a>
-        <a 
-          href="#charts"
-          className={`nav-link ${currentPage === 'charts' ? 'active' : ''}`}
-        >
-          📈 Charts
-        </a>
+
       </div>
     </nav>
   );
@@ -191,12 +151,10 @@ function App() {
               <p>Inpatient management would go here.</p>
             </div>
           )}
-          {currentPage === 'fertility' && (
-            <div style={{ padding: '20px' }}>
-              <h2>Fertility</h2>
-              <p>Fertility management would go here.</p>
-            </div>
-          )}
+          {currentPage === 'fertility' && <FertilityPage />}
+          {currentPage === 'fertility-create' && <FertilityCreatePage />}
+          {currentPage === 'fertility-fill' && <FertilityFillPage />}
+          {currentPage === 'fertility-template' && <FertilityTemplateEditor />}
           {currentPage === 'reports' && (
             <div style={{ padding: '20px' }}>
               <h2>Reports</h2>
