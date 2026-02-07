@@ -5,15 +5,12 @@ const FertilityFillFormPage = () => {
   const [patients, setPatients] = useState([]);
   const [selectedPatient, setSelectedPatient] = useState('');
   const [formData, setFormData] = useState({
-    // Patient Demographics
     patientName: '',
     patientId: '',
     gender: '',
     age: '',
     occupation: '',
     referredBy: '',
-    
-    // Female Information - General Measurements
     height: '',
     weight: '',
     bmi: '',
@@ -21,54 +18,21 @@ const FertilityFillFormPage = () => {
     pulseRate: '',
     marriedYears: '',
     subfertilityYears: '',
-    
-    // Menstrual History
     lmp: '',
     cycleLength: '',
     cyclesPattern: '',
     painInPeriods: '',
     needWithdrawal: '',
-    
-    // Obstetric History
     gravida: '',
     para: '',
     abortions: '',
     livingChild: '',
     ectopic: '',
-    
-    // Detailed Obstetric History (Table)
-    obstetricHistory: [
-      { gravida: '', modeOfConception: '', weeks: '', modeOfDelivery: '', babyOutcome: '', complications: '', comments: '' }
-    ],
-    
-    // Fertility History
     typeOfInfertility: '',
     durationYears: '',
     durationMonths: '',
     chiefComplaints: '',
-    
-    // Previous Fertility Treatments
-    ovulationInduction: [
-      { year: '', drugUsed: '', etTrigger: '', outcome: '' }
-    ],
-    iui: [
-      { year: '', drugUsed: '', etTrigger: '', outcome: '' }
-    ],
-    ivf: [
-      { year: '', center: '', protocol: '', noOfEggsEmbryos: '', outcomeComments: '' }
-    ],
-    
-    // Female Medical History
-    femaleMedicalHistory: [
-      { condition: '', duration: '', treatment: '' }
-    ],
-    
-    // Female Surgical History
-    femaleSurgicalHistory: [
-      { year: '', surgery: '', notesFindings: '' }
-    ],
-    
-    // Male Information
+    ovulationInduction: [],
     maleHeight: '',
     maleWeight: '',
     maleBmi: '',
@@ -81,7 +45,10 @@ const FertilityFillFormPage = () => {
   });
   
   const [savedRecords, setSavedRecords] = useState([]);
+  const [selectedRecord, setSelectedRecord] = useState(null);
   const [showReport, setShowReport] = useState(false);
+  const [savedTemplates, setSavedTemplates] = useState([]);
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [currentRecord, setCurrentRecord] = useState(null);
 
   useEffect(() => {
@@ -104,6 +71,16 @@ const FertilityFillFormPage = () => {
         console.error('Error loading records:', error);
       }
     }
+
+    // Load saved templates from localStorage (from template editor)
+    const templates = localStorage.getItem('fertilityTemplates');
+    if (templates) {
+      try {
+        setSavedTemplates(JSON.parse(templates));
+      } catch (error) {
+        console.error('Error loading templates:', error);
+      }
+    }
   }, []);
 
   const handleInputChange = (field, value) => {
@@ -119,19 +96,14 @@ const FertilityFillFormPage = () => {
     if (patient) {
       setFormData(prev => ({
         ...prev,
-        patientName: patient.name,
-        patientId: patient.id
+        patientName: patient.name || '',
+        patientId: patient.id || '',
+        gender: patient.gender || '',
+        age: patient.age || '',
+        occupation: patient.occupation || '',
+        referredBy: patient.referredBy || ''
       }));
     }
-  };
-
-  const handleTableChange = (tableName, index, field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [tableName]: prev[tableName].map((row, i) => 
-        i === index ? { ...row, [field]: value } : row
-      )
-    }));
   };
 
   const addTableRow = (tableName) => {
@@ -169,6 +141,8 @@ const FertilityFillFormPage = () => {
       patientId: selectedPatient,
       patientName: formData.patientName,
       formData: formData,
+      templateId: selectedTemplate ? selectedTemplate.id : null,
+      templateName: selectedTemplate ? selectedTemplate.name : null,
       createdAt: new Date().toISOString(),
       date: new Date().toLocaleDateString()
     };
@@ -227,6 +201,216 @@ const FertilityFillFormPage = () => {
     printWindow.print();
   };
 
+  const renderFormField = (field) => {
+    const value = formData[field.id] || '';
+    
+    switch (field.type) {
+      case 'text':
+        return (
+          <input
+            type="text"
+            value={value}
+            onChange={(e) => handleInputChange(field.id, e.target.value)}
+            placeholder={field.placeholder || ''}
+            className="form-input"
+            required={field.required}
+          />
+        );
+      case 'number':
+        return (
+          <input
+            type="number"
+            value={value}
+            onChange={(e) => handleInputChange(field.id, e.target.value)}
+            placeholder={field.placeholder || ''}
+            className="form-input"
+            required={field.required}
+          />
+        );
+      case 'email':
+        return (
+          <input
+            type="email"
+            value={value}
+            onChange={(e) => handleInputChange(field.id, e.target.value)}
+            placeholder={field.placeholder || ''}
+            className="form-input"
+            required={field.required}
+          />
+        );
+      case 'date':
+        return (
+          <input
+            type="date"
+            value={value}
+            onChange={(e) => handleInputChange(field.id, e.target.value)}
+            className="form-input"
+            required={field.required}
+          />
+        );
+      case 'select':
+        return (
+          <select
+            value={value}
+            onChange={(e) => handleInputChange(field.id, e.target.value)}
+            className="form-select"
+            required={field.required}
+          >
+            <option value="">Select...</option>
+            {field.options?.map((option, index) => (
+              <option key={index} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        );
+      case 'textarea':
+        return (
+          <textarea
+            value={value}
+            onChange={(e) => handleInputChange(field.id, e.target.value)}
+            placeholder={field.placeholder || ''}
+            className="form-textarea"
+            required={field.required}
+            rows={4}
+          />
+        );
+      case 'checkbox':
+        return (
+          <input
+            type="checkbox"
+            checked={value}
+            onChange={(e) => handleInputChange(field.id, e.target.checked)}
+            required={field.required}
+          />
+        );
+      case 'radio':
+        return (
+          <div className="radio-group">
+            {field.options?.map((option, index) => (
+              <label key={index} className="radio-label">
+                <input
+                  type="radio"
+                  name={field.id}
+                  value={option}
+                  checked={value === option}
+                  onChange={(e) => handleInputChange(field.id, e.target.value)}
+                  required={field.required}
+                />
+                {option}
+              </label>
+            ))}
+          </div>
+        );
+      default:
+        return (
+          <input
+            type="text"
+            value={value}
+            onChange={(e) => handleInputChange(field.id, e.target.value)}
+            placeholder={field.placeholder || ''}
+            className="form-input"
+            required={field.required}
+          />
+        );
+    }
+  };
+
+  const renderReportField = (field, value) => {
+    if (!value || value.toString().trim() === '') return null;
+    
+    switch (field.type) {
+      case 'checkbox':
+        return value ? 'Yes' : 'No';
+      case 'radio':
+        return value;
+      default:
+        return value;
+    }
+  };
+
+  const renderReportSection = (section) => {
+    return (
+      <div key={section.id} className="report-section">
+        <h3>{section.title}</h3>
+        {section.fields.map((field) => {
+          const value = renderReportField(field, currentRecord.formData[field.id]);
+          if (!value) return null;
+          
+          return (
+            <div key={field.id} className="report-field-row">
+              <span className="report-field-label">{field.label}:</span>
+              <span className="report-field-value">{value}</span>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  const getTemplateForRecord = () => {
+    // Use the stored template ID to find the exact template
+    if (currentRecord.templateId) {
+      return savedTemplates.find(template => template.id === currentRecord.templateId);
+    }
+    
+    // Fallback to field matching for older records
+    const recordFields = Object.keys(currentRecord.formData);
+    
+    for (const template of savedTemplates) {
+      if (template.sections) {
+        const templateFields = [];
+        template.sections.forEach(section => {
+          section.fields.forEach(field => {
+            templateFields.push(field.id);
+          });
+        });
+        
+        // Check if most fields match
+        const matches = recordFields.filter(field => templateFields.includes(field)).length;
+        if (matches > recordFields.length * 0.5) { // If 50%+ fields match
+          return template;
+        }
+      }
+    }
+    return null;
+  };
+
+  const loadTemplate = (template) => {
+    // Load template structure from template editor
+    if (template.sections) {
+      // This is a template from the template editor
+      setSelectedTemplate(template);
+      
+      // Initialize form data with default values based on template structure
+      const initialFormData = {};
+      
+      template.sections.forEach(section => {
+        section.fields.forEach(field => {
+          initialFormData[field.id] = field.type === 'checkbox' ? false : '';
+        });
+      });
+      
+      // Keep existing patient info but update form structure
+      setFormData(prev => ({
+        patientName: prev.patientName || '',
+        patientId: prev.patientId || '',
+        gender: prev.gender || '',
+        age: prev.age || '',
+        occupation: prev.occupation || '',
+        referredBy: prev.referredBy || '',
+        ...initialFormData
+      }));
+      
+      alert(`Template "${template.name}" loaded! Form structure updated.`);
+    } else {
+      // This is old template format (if any)
+      setSelectedTemplate(null);
+      setFormData(template.formData);
+      alert(`Template "${template.name}" loaded successfully!`);
+    }
+  };
+
   if (showReport && currentRecord) {
     return (
       <div className="fertility-report-container">
@@ -241,209 +425,53 @@ const FertilityFillFormPage = () => {
             </button>
           </div>
         </div>
-        
-        <div id="report-content" className="report-content">
+
+        <div className="report-content" id="report-content">
           <div className="report-header-info">
             <h1>ASCAS Fertility and Women's Centre</h1>
-            <p>Date: {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'numeric', year: 'numeric' })}</p>
-            <hr />
+            <p>Patient Fertility Report</p>
+            <p>Date: {new Date(currentRecord.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'numeric', year: 'numeric' })}</p>
           </div>
 
           <div className="report-section">
-            <h3>Patient Demographics</h3>
+            <h3>Patient Information</h3>
             <div className="report-field-row">
               <span className="report-field-label">Patient Name:</span>
-              <span className="report-field-value">{currentRecord.formData.patientName}</span>
+              <span className="report-field-value">{currentRecord.patientName}</span>
             </div>
             <div className="report-field-row">
               <span className="report-field-label">Patient ID:</span>
-              <span className="report-field-value">{currentRecord.formData.patientId}</span>
+              <span className="report-field-value">{currentRecord.patientId}</span>
             </div>
             <div className="report-field-row">
-              <span className="report-field-label">Gender:</span>
-              <span className="report-field-value">{currentRecord.formData.gender}</span>
-            </div>
-            <div className="report-field-row">
-              <span className="report-field-label">Age:</span>
-              <span className="report-field-value">{currentRecord.formData.age}</span>
-            </div>
-            <div className="report-field-row">
-              <span className="report-field-label">Occupation:</span>
-              <span className="report-field-value">{currentRecord.formData.occupation}</span>
-            </div>
-            <div className="report-field-row">
-              <span className="report-field-label">Referred By:</span>
-              <span className="report-field-value">{currentRecord.formData.referredBy}</span>
+              <span className="report-field-label">Record ID:</span>
+              <span className="report-field-value">{currentRecord.id}</span>
             </div>
           </div>
 
-          <div className="report-section">
-            <h3>Female Information - General Measurements</h3>
-            <div className="report-field-row">
-              <span className="report-field-label">Height:</span>
-              <span className="report-field-value">{currentRecord.formData.height}</span>
-            </div>
-            <div className="report-field-row">
-              <span className="report-field-label">Weight:</span>
-              <span className="report-field-value">{currentRecord.formData.weight}</span>
-            </div>
-            <div className="report-field-row">
-              <span className="report-field-label">BMI:</span>
-              <span className="report-field-value">{currentRecord.formData.bmi}</span>
-            </div>
-            <div className="report-field-row">
-              <span className="report-field-label">Blood Pressure:</span>
-              <span className="report-field-value">{currentRecord.formData.bloodPressure}</span>
-            </div>
-            <div className="report-field-row">
-              <span className="report-field-label">Pulse Rate:</span>
-              <span className="report-field-value">{currentRecord.formData.pulseRate}</span>
-            </div>
-            <div className="report-field-row">
-              <span className="report-field-label">Married Years:</span>
-              <span className="report-field-value">{currentRecord.formData.marriedYears}</span>
-            </div>
-            <div className="report-field-row">
-              <span className="report-field-label">Subfertility Years:</span>
-              <span className="report-field-value">{currentRecord.formData.subfertilityYears}</span>
-            </div>
-          </div>
-
-          <div className="report-section">
-            <h3>Menstrual History (H/O)</h3>
-            <div className="report-field-row">
-              <span className="report-field-label">Last Menstrual Period (LMP):</span>
-              <span className="report-field-value">{currentRecord.formData.lmp || 'N/A'}</span>
-            </div>
-            <div className="report-field-row">
-              <span className="report-field-label">Cycle Length:</span>
-              <span className="report-field-value">{currentRecord.formData.cycleLength || 'N/A'}</span>
-            </div>
-            <div className="report-field-row">
-              <span className="report-field-label">Cycles Pattern:</span>
-              <span className="report-field-value">{currentRecord.formData.cyclesPattern || 'N/A'}</span>
-            </div>
-            <div className="report-field-row">
-              <span className="report-field-label">Pain in Periods:</span>
-              <span className="report-field-value">{currentRecord.formData.painInPeriods || 'N/A'}</span>
-            </div>
-            <div className="report-field-row">
-              <span className="report-field-label">Need Withdrawal:</span>
-              <span className="report-field-value">{currentRecord.formData.needWithdrawal || 'N/A'}</span>
-            </div>
-          </div>
-
-          <div className="report-section">
-            <h3>Obstetric History</h3>
-            <div className="report-field-row">
-              <span className="report-field-label">Gravida (G):</span>
-              <span className="report-field-value">{currentRecord.formData.gravida || 'N/A'}</span>
-            </div>
-            <div className="report-field-row">
-              <span className="report-field-label">Para:</span>
-              <span className="report-field-value">{currentRecord.formData.para || 'N/A'}</span>
-            </div>
-            <div className="report-field-row">
-              <span className="report-field-label">Abortions (A):</span>
-              <span className="report-field-value">{currentRecord.formData.abortions || 'N/A'}</span>
-            </div>
-            <div className="report-field-row">
-              <span className="report-field-label">Living Child:</span>
-              <span className="report-field-value">{currentRecord.formData.livingChild || 'N/A'}</span>
-            </div>
-            <div className="report-field-row">
-              <span className="report-field-label">Ectopic:</span>
-              <span className="report-field-value">{currentRecord.formData.ectopic || 'N/A'}</span>
-            </div>
-          </div>
-
-          <div className="report-section">
-            <h3>Fertility History</h3>
-            <div className="report-field-row">
-              <span className="report-field-label">Type of Infertility:</span>
-              <span className="report-field-value">{currentRecord.formData.typeOfInfertility || 'N/A'}</span>
-            </div>
-            <div className="report-field-row">
-              <span className="report-field-label">Duration (Years):</span>
-              <span className="report-field-value">{currentRecord.formData.durationYears || 'N/A'}</span>
-            </div>
-            <div className="report-field-row">
-              <span className="report-field-label">Duration (Months):</span>
-              <span className="report-field-value">{currentRecord.formData.durationMonths || 'N/A'}</span>
-            </div>
-            <div className="report-field-row">
-              <span className="report-field-label">Chief Complaints:</span>
-              <span className="report-field-value">{currentRecord.formData.chiefComplaints || 'N/A'}</span>
-            </div>
-          </div>
-
-          <div className="report-section">
-            <h3>Previous Fertility Treatments - Ovulation Induction</h3>
-            {currentRecord.formData.ovulationInduction && currentRecord.formData.ovulationInduction.length > 0 ? (
-              <table className="report-table">
-                <thead>
-                  <tr>
-                    <th>Year</th>
-                    <th>Drug Used</th>
-                    <th>ET & Trigger</th>
-                    <th>Outcome</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {currentRecord.formData.ovulationInduction.map((row, index) => (
-                    <tr key={index}>
-                      <td>{row.year || 'N/A'}</td>
-                      <td>{row.drugUsed || 'N/A'}</td>
-                      <td>{row.etTrigger || 'N/A'}</td>
-                      <td>{row.outcome || 'N/A'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : (
-              <p>No ovulation induction records</p>
-            )}
-          </div>
-
-          <div className="report-section">
-            <h3>Male Information</h3>
-            <div className="report-field-row">
-              <span className="report-field-label">Height:</span>
-              <span className="report-field-value">{currentRecord.formData.maleHeight || 'N/A'}</span>
-            </div>
-            <div className="report-field-row">
-              <span className="report-field-label">Weight:</span>
-              <span className="report-field-value">{currentRecord.formData.maleWeight || 'N/A'}</span>
-            </div>
-            <div className="report-field-row">
-              <span className="report-field-label">BMI:</span>
-              <span className="report-field-value">{currentRecord.formData.maleBmi || 'N/A'}</span>
-            </div>
-            <div className="report-field-row">
-              <span className="report-field-label">Blood Pressure:</span>
-              <span className="report-field-value">{currentRecord.formData.maleBloodPressure || 'N/A'}</span>
-            </div>
-            <div className="report-field-row">
-              <span className="report-field-label">Pulse Rate:</span>
-              <span className="report-field-value">{currentRecord.formData.malePulseRate || 'N/A'}</span>
-            </div>
-            <div className="report-field-row">
-              <span className="report-field-label">Sexual Dysfunction:</span>
-              <span className="report-field-value">{currentRecord.formData.sexualDysfunction || 'N/A'}</span>
-            </div>
-            <div className="report-field-row">
-              <span className="report-field-label">Erectile Problem:</span>
-              <span className="report-field-value">{currentRecord.formData.erectileProblem || 'N/A'}</span>
-            </div>
-            <div className="report-field-row">
-              <span className="report-field-label">Ejaculate Problem:</span>
-              <span className="report-field-value">{currentRecord.formData.ejaculateProblem || 'N/A'}</span>
-            </div>
-            <div className="report-field-row">
-              <span className="report-field-label">Others:</span>
-              <span className="report-field-value">{currentRecord.formData.others || 'N/A'}</span>
-            </div>
-          </div>
+          {/* Dynamic report based on template structure */}
+          {(() => {
+            const matchingTemplate = getTemplateForRecord();
+            if (matchingTemplate && matchingTemplate.sections) {
+              // Render based on template structure
+              return matchingTemplate.sections.map(renderReportSection);
+            } else {
+              // Render default structure for non-template forms
+              return (
+                <div className="report-section">
+                  <h3>Clinical Data</h3>
+                  {Object.entries(currentRecord.formData)
+                    .filter(([key, value]) => value && value.toString().trim() !== '')
+                    .map(([key, value]) => (
+                      <div key={key} className="report-field-row">
+                        <span className="report-field-label">{key.replace(/([A-Z])/g, ' $1').replace(/^./, '')}:</span>
+                        <span className="report-field-value">{value}</span>
+                      </div>
+                    ))}
+                </div>
+              );
+            }
+          })()}
         </div>
       </div>
     );
@@ -467,497 +495,144 @@ const FertilityFillFormPage = () => {
       {/* Patient Selection */}
       <div className="card">
         <h3>Patient Selection</h3>
-        <select
-          value={selectedPatient}
-          onChange={(e) => handlePatientSelect(e.target.value)}
-          className="form-select"
-        >
-          <option value="">Select a patient...</option>
-          {patients.map(patient => (
-            <option key={patient.id} value={patient.id}>
-              {patient.name} ({patient.id})
-            </option>
-          ))}
-        </select>
+        <div className="form-row">
+          <div className="form-field">
+            <label>Select Patient</label>
+            <select
+              value={selectedPatient}
+              onChange={(e) => handlePatientSelect(e.target.value)}
+              className="form-select"
+            >
+              <option value="">Select a patient...</option>
+              {patients.map(patient => (
+                <option key={patient.id} value={patient.id}>
+                  {patient.name} ({patient.id})
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="form-field">
+            <label>Load Template</label>
+            <select
+              onChange={(e) => {
+                if (e.target.value) {
+                  const template = savedTemplates.find(t => t.id === e.target.value);
+                  if (template) {
+                    loadTemplate(template);
+                  }
+                  e.target.value = '';
+                }
+              }}
+              className="form-select"
+            >
+              <option value="">Select template...</option>
+              {savedTemplates.map(template => (
+                <option key={template.id} value={template.id}>
+                  {template.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
       </div>
 
       {selectedPatient && (
         <form className="fertility-form">
-          {/* Patient Demographics */}
-          <div className="form-section">
-            <h3>Patient Demographics</h3>
-            <div className="form-row">
-              <div className="form-field">
-                <label>Patient Name</label>
-                <input
-                  type="text"
-                  value={formData.patientName}
-                  onChange={(e) => handleInputChange('patientName', e.target.value)}
-                  className="form-input"
-                />
-              </div>
-              <div className="form-field">
-                <label>Patient ID</label>
-                <input
-                  type="text"
-                  value={formData.patientId}
-                  onChange={(e) => handleInputChange('patientId', e.target.value)}
-                  className="form-input"
-                />
-              </div>
-              <div className="form-field">
-                <label>Gender</label>
-                <select
-                  value={formData.gender}
-                  onChange={(e) => handleInputChange('gender', e.target.value)}
-                  className="form-select"
-                >
-                  <option value="">Select...</option>
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-            </div>
-            <div className="form-row">
-              <div className="form-field">
-                <label>Age</label>
-                <input
-                  type="number"
-                  value={formData.age}
-                  onChange={(e) => handleInputChange('age', e.target.value)}
-                  className="form-input"
-                />
-              </div>
-              <div className="form-field">
-                <label>Occupation</label>
-                <input
-                  type="text"
-                  value={formData.occupation}
-                  onChange={(e) => handleInputChange('occupation', e.target.value)}
-                  className="form-input"
-                />
-              </div>
-              <div className="form-field">
-                <label>Referred By</label>
-                <input
-                  type="text"
-                  value={formData.referredBy}
-                  onChange={(e) => handleInputChange('referredBy', e.target.value)}
-                  className="form-input"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Female Information - General Measurements */}
-          <div className="form-section">
-            <h3>Female Information - General Measurements</h3>
-            <div className="form-row">
-              <div className="form-field">
-                <label>Height</label>
-                <input
-                  type="text"
-                  value={formData.height}
-                  onChange={(e) => handleInputChange('height', e.target.value)}
-                  className="form-input"
-                  placeholder="cm"
-                />
-              </div>
-              <div className="form-field">
-                <label>Weight</label>
-                <input
-                  type="text"
-                  value={formData.weight}
-                  onChange={(e) => handleInputChange('weight', e.target.value)}
-                  className="form-input"
-                  placeholder="kg"
-                />
-              </div>
-              <div className="form-field">
-                <label>BMI</label>
-                <input
-                  type="text"
-                  value={formData.bmi}
-                  onChange={(e) => handleInputChange('bmi', e.target.value)}
-                  className="form-input"
-                />
-              </div>
-            </div>
-            <div className="form-row">
-              <div className="form-field">
-                <label>Blood Pressure</label>
-                <input
-                  type="text"
-                  value={formData.bloodPressure}
-                  onChange={(e) => handleInputChange('bloodPressure', e.target.value)}
-                  className="form-input"
-                  placeholder="120/80"
-                />
-              </div>
-              <div className="form-field">
-                <label>Pulse Rate</label>
-                <input
-                  type="text"
-                  value={formData.pulseRate}
-                  onChange={(e) => handleInputChange('pulseRate', e.target.value)}
-                  className="form-input"
-                  placeholder="bpm"
-                />
-              </div>
-              <div className="form-field">
-                <label>Married Years</label>
-                <input
-                  type="number"
-                  value={formData.marriedYears}
-                  onChange={(e) => handleInputChange('marriedYears', e.target.value)}
-                  className="form-input"
-                />
-              </div>
-            </div>
-            <div className="form-row">
-              <div className="form-field">
-                <label>Subfertility Years</label>
-                <input
-                  type="number"
-                  value={formData.subfertilityYears}
-                  onChange={(e) => handleInputChange('subfertilityYears', e.target.value)}
-                  className="form-input"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Menstrual History */}
-          <div className="form-section">
-            <h3>Menstrual History (H/O)</h3>
-            <div className="form-row">
-              <div className="form-field">
-                <label>Last Menstrual Period (LMP)</label>
-                <input
-                  type="date"
-                  value={formData.lmp}
-                  onChange={(e) => handleInputChange('lmp', e.target.value)}
-                  className="form-input"
-                />
-              </div>
-              <div className="form-field">
-                <label>Cycle Length</label>
-                <input
-                  type="text"
-                  value={formData.cycleLength}
-                  onChange={(e) => handleInputChange('cycleLength', e.target.value)}
-                  className="form-input"
-                  placeholder="days"
-                />
-              </div>
-              <div className="form-field">
-                <label>Cycles Pattern</label>
-                <input
-                  type="text"
-                  value={formData.cyclesPattern}
-                  onChange={(e) => handleInputChange('cyclesPattern', e.target.value)}
-                  className="form-input"
-                />
-              </div>
-            </div>
-            <div className="form-row">
-              <div className="form-field">
-                <label>Pain in Periods</label>
-                <select
-                  value={formData.painInPeriods}
-                  onChange={(e) => handleInputChange('painInPeriods', e.target.value)}
-                  className="form-select"
-                >
-                  <option value="">Select...</option>
-                  <option value="No">No</option>
-                  <option value="Mild">Mild</option>
-                  <option value="Moderate">Moderate</option>
-                  <option value="Severe">Severe</option>
-                </select>
-              </div>
-              <div className="form-field">
-                <label>Need Withdrawal</label>
-                <select
-                  value={formData.needWithdrawal}
-                  onChange={(e) => handleInputChange('needWithdrawal', e.target.value)}
-                  className="form-select"
-                >
-                  <option value="">Select...</option>
-                  <option value="No">No</option>
-                  <option value="Yes">Yes</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          {/* Obstetric History */}
-          <div className="form-section">
-            <h3>Obstetric History</h3>
-            <div className="form-row">
-              <div className="form-field">
-                <label>Gravida (G)</label>
-                <input
-                  type="number"
-                  value={formData.gravida}
-                  onChange={(e) => handleInputChange('gravida', e.target.value)}
-                  className="form-input"
-                />
-              </div>
-              <div className="form-field">
-                <label>Para</label>
-                <input
-                  type="number"
-                  value={formData.para}
-                  onChange={(e) => handleInputChange('para', e.target.value)}
-                  className="form-input"
-                />
-              </div>
-              <div className="form-field">
-                <label>Abortions (A)</label>
-                <input
-                  type="number"
-                  value={formData.abortions}
-                  onChange={(e) => handleInputChange('abortions', e.target.value)}
-                  className="form-input"
-                />
-              </div>
-            </div>
-            <div className="form-row">
-              <div className="form-field">
-                <label>Living Child</label>
-                <input
-                  type="number"
-                  value={formData.livingChild}
-                  onChange={(e) => handleInputChange('livingChild', e.target.value)}
-                  className="form-input"
-                />
-              </div>
-              <div className="form-field">
-                <label>Ectopic</label>
-                <input
-                  type="number"
-                  value={formData.ectopic}
-                  onChange={(e) => handleInputChange('ectopic', e.target.value)}
-                  className="form-input"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Fertility History */}
-          <div className="form-section">
-            <h3>Fertility History</h3>
-            <div className="form-row">
-              <div className="form-field">
-                <label>Type of Infertility</label>
-                <select
-                  value={formData.typeOfInfertility}
-                  onChange={(e) => handleInputChange('typeOfInfertility', e.target.value)}
-                  className="form-select"
-                >
-                  <option value="">Select...</option>
-                  <option value="Primary">Primary</option>
-                  <option value="Secondary">Secondary</option>
-                </select>
-              </div>
-              <div className="form-field">
-                <label>Duration (Years)</label>
-                <input
-                  type="number"
-                  value={formData.durationYears}
-                  onChange={(e) => handleInputChange('durationYears', e.target.value)}
-                  className="form-input"
-                />
-              </div>
-              <div className="form-field">
-                <label>Duration (Months)</label>
-                <input
-                  type="number"
-                  value={formData.durationMonths}
-                  onChange={(e) => handleInputChange('durationMonths', e.target.value)}
-                  className="form-input"
-                />
-              </div>
-            </div>
-            <div className="form-row">
-              <div className="form-field full-width">
-                <label>Chief Complaints</label>
-                <textarea
-                  value={formData.chiefComplaints}
-                  onChange={(e) => handleInputChange('chiefComplaints', e.target.value)}
-                  className="form-textarea"
-                  rows="3"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Previous Fertility Treatments - Ovulation Induction */}
-          <div className="form-section">
-            <h3>Previous Fertility Treatments - Ovulation Induction</h3>
-            {formData.ovulationInduction.map((row, index) => (
-              <div key={index} className="table-row">
-                <div className="form-field">
-                  <input
-                    type="text"
-                    value={row.year}
-                    onChange={(e) => handleTableChange('ovulationInduction', index, 'year', e.target.value)}
-                    className="form-input"
-                    placeholder="Year"
-                  />
+          {selectedTemplate && selectedTemplate.sections ? (
+            // Render dynamic form based on selected template
+            selectedTemplate.sections.map((section) => (
+              <div key={section.id} className="form-section">
+                <h3>{section.title}</h3>
+                <div className="form-row">
+                  {section.fields.map((field) => (
+                    <div key={field.id} className="form-field">
+                      <label>
+                        {field.label}
+                        {field.required && <span className="required">*</span>}
+                      </label>
+                      {renderFormField(field)}
+                    </div>
+                  ))}
                 </div>
-                <div className="form-field">
-                  <input
-                    type="text"
-                    value={row.drugUsed}
-                    onChange={(e) => handleTableChange('ovulationInduction', index, 'drugUsed', e.target.value)}
-                    className="form-input"
-                    placeholder="Drug Used"
-                  />
-                </div>
-                <div className="form-field">
-                  <input
-                    type="text"
-                    value={row.etTrigger}
-                    onChange={(e) => handleTableChange('ovulationInduction', index, 'etTrigger', e.target.value)}
-                    className="form-input"
-                    placeholder="ET & Trigger"
-                  />
-                </div>
-                <div className="form-field">
-                  <input
-                    type="text"
-                    value={row.outcome}
-                    onChange={(e) => handleTableChange('ovulationInduction', index, 'outcome', e.target.value)}
-                    className="form-input"
-                    placeholder="Outcome"
-                  />
-                </div>
-                <button
-                  type="button"
-                  className="btn btn-danger btn-sm"
-                  onClick={() => removeTableRow('ovulationInduction', index)}
-                >
-                  Remove
-                </button>
               </div>
-            ))}
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={() => addTableRow('ovulationInduction')}
-            >
-              + Add Row
-            </button>
-          </div>
+            ))
+          ) : (
+            // Render default ASCAS form when no template is selected
+            <>
+              {/* Patient Demographics */}
+              <div className="form-section">
+                <h3>Patient Demographics</h3>
+                <div className="form-row">
+                  <div className="form-field">
+                    <label>Patient Name</label>
+                    <input
+                      type="text"
+                      value={formData.patientName}
+                      onChange={(e) => handleInputChange('patientName', e.target.value)}
+                      className="form-input"
+                    />
+                  </div>
+                  <div className="form-field">
+                    <label>Patient ID</label>
+                    <input
+                      type="text"
+                      value={formData.patientId}
+                      onChange={(e) => handleInputChange('patientId', e.target.value)}
+                      className="form-input"
+                    />
+                  </div>
+                  <div className="form-field">
+                    <label>Gender</label>
+                    <select
+                      value={formData.gender}
+                      onChange={(e) => handleInputChange('gender', e.target.value)}
+                      className="form-select"
+                    >
+                      <option value="">Select...</option>
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="form-row">
+                  <div className="form-field">
+                    <label>Age</label>
+                    <input
+                      type="number"
+                      value={formData.age}
+                      onChange={(e) => handleInputChange('age', e.target.value)}
+                      className="form-input"
+                    />
+                  </div>
+                  <div className="form-field">
+                    <label>Occupation</label>
+                    <input
+                      type="text"
+                      value={formData.occupation}
+                      onChange={(e) => handleInputChange('occupation', e.target.value)}
+                      className="form-input"
+                    />
+                  </div>
+                  <div className="form-field">
+                    <label>Referred By</label>
+                    <input
+                      type="text"
+                      value={formData.referredBy}
+                      onChange={(e) => handleInputChange('referredBy', e.target.value)}
+                      className="form-input"
+                    />
+                  </div>
+                </div>
+              </div>
 
-          {/* Male Information */}
-          <div className="form-section">
-            <h3>Male Information</h3>
-            <div className="form-row">
-              <div className="form-field">
-                <label>Height</label>
-                <input
-                  type="text"
-                  value={formData.maleHeight}
-                  onChange={(e) => handleInputChange('maleHeight', e.target.value)}
-                  className="form-input"
-                  placeholder="cm"
-                />
+              {/* Add more default form sections as needed */}
+              <div className="form-section">
+                <h3>Basic Information</h3>
+                <p>Please select a template to load a specific form structure, or use this default form.</p>
               </div>
-              <div className="form-field">
-                <label>Weight</label>
-                <input
-                  type="text"
-                  value={formData.maleWeight}
-                  onChange={(e) => handleInputChange('maleWeight', e.target.value)}
-                  className="form-input"
-                  placeholder="kg"
-                />
-              </div>
-              <div className="form-field">
-                <label>BMI</label>
-                <input
-                  type="text"
-                  value={formData.maleBmi}
-                  onChange={(e) => handleInputChange('maleBmi', e.target.value)}
-                  className="form-input"
-                />
-              </div>
-            </div>
-            <div className="form-row">
-              <div className="form-field">
-                <label>Blood Pressure</label>
-                <input
-                  type="text"
-                  value={formData.maleBloodPressure}
-                  onChange={(e) => handleInputChange('maleBloodPressure', e.target.value)}
-                  className="form-input"
-                  placeholder="120/80"
-                />
-              </div>
-              <div className="form-field">
-                <label>Pulse Rate</label>
-                <input
-                  type="text"
-                  value={formData.malePulseRate}
-                  onChange={(e) => handleInputChange('malePulseRate', e.target.value)}
-                  className="form-input"
-                  placeholder="bpm"
-                />
-              </div>
-            </div>
-            <div className="form-row">
-              <div className="form-field">
-                <label>Sexual Dysfunction</label>
-                <select
-                  value={formData.sexualDysfunction}
-                  onChange={(e) => handleInputChange('sexualDysfunction', e.target.value)}
-                  className="form-select"
-                >
-                  <option value="">Select...</option>
-                  <option value="No">No</option>
-                  <option value="Yes">Yes</option>
-                </select>
-              </div>
-              <div className="form-field">
-                <label>Erectile Problem</label>
-                <select
-                  value={formData.erectileProblem}
-                  onChange={(e) => handleInputChange('erectileProblem', e.target.value)}
-                  className="form-select"
-                >
-                  <option value="">Select...</option>
-                  <option value="No">No</option>
-                  <option value="Yes">Yes</option>
-                </select>
-              </div>
-              <div className="form-field">
-                <label>Ejaculate Problem</label>
-                <select
-                  value={formData.ejaculateProblem}
-                  onChange={(e) => handleInputChange('ejaculateProblem', e.target.value)}
-                  className="form-select"
-                >
-                  <option value="">Select...</option>
-                  <option value="No">No</option>
-                  <option value="Yes">Yes</option>
-                </select>
-              </div>
-            </div>
-            <div className="form-row">
-              <div className="form-field full-width">
-                <label>Others</label>
-                <textarea
-                  value={formData.others}
-                  onChange={(e) => handleInputChange('others', e.target.value)}
-                  className="form-textarea"
-                  rows="2"
-                />
-              </div>
-            </div>
-          </div>
+            </>
+          )}
         </form>
       )}
 
@@ -971,6 +646,9 @@ const FertilityFillFormPage = () => {
                 <div className="record-info">
                   <h4>{record.patientName}</h4>
                   <p>ID: {record.id} | Date: {record.date}</p>
+                  {record.templateName && (
+                    <p className="template-info">Template: {record.templateName}</p>
+                  )}
                 </div>
                 <div className="record-actions">
                   <button
