@@ -7,6 +7,7 @@ const FertilityCreatePage = () => {
   const [selectedField, setSelectedField] = useState(null);
   const [formName, setFormName] = useState('Fertility Form Template');
   const [savedForms, setSavedForms] = useState([]);
+  const [savedTemplates, setSavedTemplates] = useState([]);
   const [activeTab, setActiveTab] = useState('components');
 
   // Available components specific to fertility
@@ -32,6 +33,10 @@ const FertilityCreatePage = () => {
     // Load saved forms from localStorage
     const forms = JSON.parse(localStorage.getItem('fertilitySavedForms') || '[]');
     setSavedForms(forms);
+    
+    // Load saved templates from fertilityTemplates storage
+    const templates = JSON.parse(localStorage.getItem('fertilityTemplates') || '[]');
+    setSavedTemplates(templates);
   }, []);
 
   // When admin starts dragging a component
@@ -85,6 +90,16 @@ const FertilityCreatePage = () => {
       setSavedForms(updatedForms);
       localStorage.setItem('fertilitySavedForms', JSON.stringify(updatedForms));
       alert('Form deleted successfully!');
+    }
+  };
+
+  const loadTemplate = (template) => {
+    // Load template fields into form builder
+    if (template.sections && template.sections.length > 0) {
+      const fields = template.sections[0].fields || [];
+      setFormFields(fields);
+      setFormName(template.name);
+      alert(`Template "${template.name}" loaded successfully!`);
     }
   };
 
@@ -227,14 +242,17 @@ const FertilityCreatePage = () => {
       {/* LEFT PANEL – COMPONENTS/FORMS */}
       <div className="components-panel">
         <div className="panel-header">
-          <h3>{activeTab === 'components' ? 'Components' : 'Saved Forms'}</h3>
+          <h3>
+            {activeTab === 'components' ? 'Components' : 
+             activeTab === 'forms' ? 'Saved Forms' : 'Templates'}
+          </h3>
           <button className="back-to-dashboard-btn" onClick={() => window.location.hash = '#fertility'}>
             ← Fertility
           </button>
         </div>
         
         {/* Tab Navigation */}
-        <div className="tab-navigation">
+        <div className="sidebar-tabs">
           <button 
             className={`tab-btn ${activeTab === 'components' ? 'active' : ''}`}
             onClick={() => setActiveTab('components')}
@@ -246,6 +264,12 @@ const FertilityCreatePage = () => {
             onClick={() => setActiveTab('forms')}
           >
             Forms ({savedForms.length})
+          </button>
+          <button 
+            className={`tab-btn ${activeTab === 'templates' ? 'active' : ''}`}
+            onClick={() => setActiveTab('templates')}
+          >
+            Templates ({savedTemplates.length})
           </button>
         </div>
 
@@ -269,16 +293,50 @@ const FertilityCreatePage = () => {
                 <div key={form.id} className="form-card-item">
                   <div className="form-card-content">
                     <h4>{form.name}</h4>
-                    <p>{form.fields.length} fields</p>
                     <p>Created: {new Date(form.createdAt).toLocaleDateString()}</p>
+                    <div className="form-card-actions">
+                      <button 
+                        className="load-btn" 
+                        onClick={() => {
+                          setFormFields(form.fields);
+                          setFormName(form.name);
+                        }}
+                      >
+                        Load
+                      </button>
+                      <button 
+                        className="delete-btn" 
+                        onClick={() => deleteForm(form.id)}
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
-                  <button 
-                    className="delete-form-btn" 
-                    onClick={() => deleteForm(form.id)}
-                    title="Delete form"
-                  >
-                    🗑️
-                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+        
+        {activeTab === 'templates' && (
+          <div className="forms-list">
+            {savedTemplates.length === 0 ? (
+              <p className="no-forms-message">No saved templates yet</p>
+            ) : (
+              savedTemplates.map(template => (
+                <div key={template.id} className="form-card-item">
+                  <div className="form-card-content">
+                    <h4>{template.name}</h4>
+                    <p>Created: {new Date(template.createdAt).toLocaleDateString()}</p>
+                    <div className="form-card-actions">
+                      <button 
+                        className="load-btn" 
+                        onClick={() => loadTemplate(template)}
+                      >
+                        Load
+                      </button>
+                    </div>
+                  </div>
                 </div>
               ))
             )}
