@@ -122,28 +122,38 @@ const FertilityTemplateEditor = () => {
 
   const handleDragOver = (e) => {
     e.preventDefault();
+    e.stopPropagation();
   };
 
   const handleDrop = (e, sectionId) => {
     e.preventDefault();
-    const fieldType = JSON.parse(e.dataTransfer.getData('fieldType'));
+    e.stopPropagation();
     
-    const newField = {
-      id: 'field_' + Date.now(),
-      type: fieldType.type,
-      label: fieldType.label,
-      required: false,
-      placeholder: '',
-      ...(fieldType.type === 'select' && { options: ['Option 1', 'Option 2', 'Option 3'] })
-    };
+    const fieldType = e.dataTransfer.getData('fieldType');
+    if (!fieldType) return;
+    
+    try {
+      const parsedFieldType = JSON.parse(fieldType);
+      
+      const newField = {
+        id: 'field_' + Date.now(),
+        type: parsedFieldType.type,
+        label: parsedFieldType.label,
+        required: false,
+        placeholder: '',
+        ...(parsedFieldType.type === 'select' && { options: ['Option 1', 'Option 2', 'Option 3'] })
+      };
 
-    setFormSections(sections =>
-      sections.map(section =>
-        section.id === sectionId
-          ? { ...section, fields: [...section.fields, newField] }
-          : section
-      )
-    );
+      setFormSections(sections =>
+        sections.map(section =>
+          section.id === sectionId
+            ? { ...section, fields: [...section.fields, newField] }
+            : section
+        )
+      );
+    } catch (error) {
+      console.error('Error parsing field type:', error);
+    }
   };
 
   const handleSectionDragStart = (e, sectionId) => {
@@ -152,18 +162,40 @@ const FertilityTemplateEditor = () => {
 
   const handleSectionDrop = (e, targetSectionId) => {
     e.preventDefault();
-    const draggedSectionId = e.dataTransfer.getData('sectionId');
+    e.stopPropagation();
     
-    if (draggedSectionId !== targetSectionId) {
-      const draggedIndex = formSections.findIndex(s => s.id === draggedSectionId);
-      const targetIndex = formSections.findIndex(s => s.id === targetSectionId);
-      
-      const newSections = [...formSections];
-      const [draggedSection] = newSections.splice(draggedIndex, 1);
-      newSections.splice(targetIndex, 0, draggedSection);
-      
-      setFormSections(newSections);
+    const fieldType = e.dataTransfer.getData('fieldType');
+    if (fieldType) {
+      // This is a field drop, not a section drop
+      handleDrop(e, targetSectionId);
+      return;
     }
+    
+    const draggedSectionId = e.dataTransfer.getData('sectionId');
+    if (!draggedSectionId || draggedSectionId === targetSectionId) return;
+    
+    const draggedIndex = formSections.findIndex(s => s.id === draggedSectionId);
+    const targetIndex = formSections.findIndex(s => s.id === targetSectionId);
+    
+    if (draggedIndex === -1 || targetIndex === -1) return;
+    
+    const newSections = [...formSections];
+    const [draggedSection] = newSections.splice(draggedIndex, 1);
+    newSections.splice(targetIndex, 0, draggedSection);
+    
+    setFormSections(newSections);
+  };
+
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.classList.add('drag-over');
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.classList.remove('drag-over');
   };
 
   const updateField = (sectionId, fieldId, updates) => {
@@ -392,8 +424,16 @@ const FertilityTemplateEditor = () => {
                 
                 <div
                   className="section-fields"
-                  onDragOver={handleDragOver}
-                  onDrop={(e) => handleDrop(e, section.id)}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                  onDragEnter={handleDragEnter}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => {
+                    handleDrop(e, section.id);
+                    e.currentTarget.classList.remove('drag-over');
+                  }}
                 >
                   {section.fields.length === 0 ? (
                     <p className="placeholder-text">Drag fields here</p>

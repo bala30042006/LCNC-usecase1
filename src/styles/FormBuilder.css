@@ -484,6 +484,13 @@
   min-height: 100px;
   background: #fafbfc;
   border-radius: 0 0 6px 6px;
+  border: 2px dashed transparent;
+  transition: all 0.2s;
+}
+
+.section-fields.drag-over {
+  border-color: #007bff;
+  background: #f0f8ff;
 }
 
 .template-field {
