@@ -6,7 +6,6 @@ const FertilityCreatePage = () => {
   const [formFields, setFormFields] = useState([]);
   const [selectedField, setSelectedField] = useState(null);
   const [formName, setFormName] = useState('Fertility Form Template');
-  const [savedForms, setSavedForms] = useState([]);
   const [savedTemplates, setSavedTemplates] = useState([]);
   const [activeTab, setActiveTab] = useState('components');
 
@@ -30,10 +29,6 @@ const FertilityCreatePage = () => {
   ];
 
   useEffect(() => {
-    // Load saved forms from localStorage
-    const forms = JSON.parse(localStorage.getItem('fertilitySavedForms') || '[]');
-    setSavedForms(forms);
-    
     // Load saved templates from fertilityTemplates storage
     const templates = JSON.parse(localStorage.getItem('fertilityTemplates') || '[]');
     setSavedTemplates(templates);
@@ -84,15 +79,6 @@ const FertilityCreatePage = () => {
     ));
   };
 
-  const deleteForm = (formId) => {
-    if (window.confirm('Are you sure you want to delete this form?')) {
-      const updatedForms = savedForms.filter(form => form.id !== formId);
-      setSavedForms(updatedForms);
-      localStorage.setItem('fertilitySavedForms', JSON.stringify(updatedForms));
-      alert('Form deleted successfully!');
-    }
-  };
-
   const loadTemplate = (template) => {
     // Load template fields into form builder
     if (template.sections && template.sections.length > 0) {
@@ -137,22 +123,10 @@ const FertilityCreatePage = () => {
     // Save to fertilityTemplates storage (used by Edit Template page)
     localStorage.setItem('fertilityTemplates', JSON.stringify(existingTemplates));
     
-    // Also save to fertilitySavedForms for backward compatibility
-    const savedForms = JSON.parse(localStorage.getItem('fertilitySavedForms') || '[]');
-    const formData = {
-      id: Date.now().toString(),
-      name: formName,
-      fields: formFields,
-      createdAt: new Date().toISOString()
-    };
-    savedForms.push(formData);
-    localStorage.setItem('fertilitySavedForms', JSON.stringify(savedForms));
-    localStorage.setItem('fertilityFormStructure', JSON.stringify(formFields));
-    
     // Update local state
-    setSavedForms(savedForms);
+    setSavedTemplates(existingTemplates);
     
-    alert(`Form "${formName}" saved as template and is now available in Edit Template page!`);
+    alert(`Template "${formName}" saved successfully and is now available in Edit Template page!`);
   };
 
   const saveField = () => {
@@ -234,274 +208,271 @@ const FertilityCreatePage = () => {
 
       default:
         return null;
-    }
-  };
-
   return (
     <div className="lcnc-container">
-      {/* LEFT PANEL – COMPONENTS/FORMS */}
-      <div className="components-panel">
-        <div className="panel-header">
-          <h3>
-            {activeTab === 'components' ? 'Components' : 
-             activeTab === 'forms' ? 'Saved Forms' : 'Templates'}
-          </h3>
-          <button className="back-to-dashboard-btn" onClick={() => window.location.hash = '#fertility'}>
-            ← Fertility
-          </button>
-        </div>
-        
-        {/* Tab Navigation */}
-        <div className="sidebar-tabs">
-          <button 
-            className={`tab-btn ${activeTab === 'components' ? 'active' : ''}`}
-            onClick={() => setActiveTab('components')}
-          >
-            Components
-          </button>
-          <button 
-            className={`tab-btn ${activeTab === 'forms' ? 'active' : ''}`}
-            onClick={() => setActiveTab('forms')}
-          >
-            Forms ({savedForms.length})
-          </button>
-          <button 
-            className={`tab-btn ${activeTab === 'templates' ? 'active' : ''}`}
-            onClick={() => setActiveTab('templates')}
-          >
-            Templates ({savedTemplates.length})
-          </button>
-        </div>
-
-        {activeTab === 'components' ? (
-          AVAILABLE_COMPONENTS.map((component, index) => (
-            <div
-              key={index}
-              className="component-item"
-              draggable
-              onDragStart={(e) => onDragStart(e, component)}
-            >
-              {component.label}
-            </div>
-          ))
-        ) : (
-          <div className="forms-list">
-            {savedForms.length === 0 ? (
-              <p className="no-forms-message">No saved forms yet</p>
-            ) : (
-              savedForms.map(form => (
-                <div key={form.id} className="form-card-item">
-                  <div className="form-card-content">
-                    <h4>{form.name}</h4>
-                    <p>Created: {new Date(form.createdAt).toLocaleDateString()}</p>
-                    <div className="form-card-actions">
-                      <button 
-                        className="load-btn" 
-                        onClick={() => {
-                          setFormFields(form.fields);
-                          setFormName(form.name);
-                        }}
-                      >
-                        Load
-                      </button>
-                      <button 
-                        className="delete-btn" 
-                        onClick={() => deleteForm(form.id)}
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        )}
-        
-        {activeTab === 'templates' && (
-          <div className="forms-list">
-            {savedTemplates.length === 0 ? (
-              <p className="no-forms-message">No saved templates yet</p>
-            ) : (
-              savedTemplates.map(template => (
-                <div key={template.id} className="form-card-item">
-                  <div className="form-card-content">
-                    <h4>{template.name}</h4>
-                    <p>Created: {new Date(template.createdAt).toLocaleDateString()}</p>
-                    <div className="form-card-actions">
-                      <button 
-                        className="load-btn" 
-                        onClick={() => loadTemplate(template)}
-                      >
-                        Load
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        )}
+      {/* HEADER */}
+      <div className="page-header">
+        <h1>Create Fertility Form Template</h1>
+        <p>Build custom fertility form templates by dragging and dropping fields</p>
+        <button className="back-btn" onClick={() => window.location.hash = '#fertility'}>
+          ← Back to Fertility
+        </button>
       </div>
 
-      {/* CENTER – FORM AREA */}
-      <div className="form-area" onDragOver={onDragOver} onDrop={onDrop}>
-        <div className="form-builder-header">
-          <div className="form-builder-header">
-            <h2>Create Fertility Form Template</h2>
-            <p>Build custom fertility form templates by dragging and dropping fields</p>
-          </div>
-          <div className="form-actions-top">
-            <input
-              type="text"
-              value={formName}
-              onChange={(e) => setFormName(e.target.value)}
-              placeholder="Form Name"
-              className="form-name-input"
-            />
-            <button className="save-form-button" onClick={saveForm}>
-              Save as Template
+      {/* MAIN CONTENT */}
+      <div className="create-form-content">
+        {/* LEFT SIDEBAR */}
+        <div className="create-sidebar">
+          {/* Tab Navigation */}
+          <div className="sidebar-tabs">
+            <button 
+              className={`tab-btn ${activeTab === 'components' ? 'active' : ''}`}
+              onClick={() => setActiveTab('components')}
+            >
+              🧩 Components
+            </button>
+            <button 
+              className={`tab-btn ${activeTab === 'templates' ? 'active' : ''}`}
+              onClick={() => setActiveTab('templates')}
+            >
+              📋 Templates ({savedTemplates.length})
             </button>
           </div>
+
+          {/* Tab Content */}
+          <div className="tab-content">
+            {activeTab === 'components' && (
+              <div className="components-list">
+                <h4>Available Components</h4>
+                <p>Drag these components to build your form:</p>
+                {AVAILABLE_COMPONENTS.map((component, index) => (
+                  <div
+                    key={index}
+                    className="component-item"
+                    draggable
+                    onDragStart={(e) => onDragStart(e, component)}
+                  >
+                    <div className="component-icon">
+                      {component.type === 'text' && '📝'}
+                      {component.type === 'date' && '📅'}
+                      {component.type === 'textarea' && '📄'}
+                      {component.type === 'dropdown' && '📋'}
+                      {component.type === 'number' && '🔢'}
+                      {component.type === 'email' && '📧'}
+                      {component.type === 'submit' && '✅'}
+                    </div>
+                    <span>{component.label}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {activeTab === 'templates' && (
+              <div className="templates-list">
+                <h4>Saved Templates</h4>
+                <p>Click on a template to load it into the form builder:</p>
+                {savedTemplates.length === 0 ? (
+                  <div className="empty-state">
+                    <p>No templates saved yet</p>
+                    <p>Create your first template above!</p>
+                  </div>
+                ) : (
+                  savedTemplates.map(template => (
+                    <div key={template.id} className="template-card">
+                      <div className="template-header">
+                        <h5>{template.name}</h5>
+                        <small>{new Date(template.createdAt).toLocaleDateString()}</small>
+                      </div>
+                      <div className="template-actions">
+                        <button 
+                          className="load-template-btn" 
+                          onClick={() => loadTemplate(template)}
+                        >
+                          🔄 Load
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
-        {formFields.length === 0 && (
-          <p className="placeholder-text">
-            Drag fields here to build fertility form
-          </p>
-        )}
-
-        {formFields.map((field) => (
-          <div 
-            key={field.id} 
-            className={`form-field ${selectedField?.id === field.id ? 'selected' : ''}`}
-            onClick={() => setSelectedField(field)}
-          >
-            <div className="field-label">{field.title}</div>
-            {renderField(field)}
-            <div className="field-actions">
-              <button 
-                className="edit-field-btn" 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setSelectedField(field);
-                }}
-              >
-                ✏️
-              </button>
-              <button 
-                className="delete-field-btn" 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  deleteField(field.id);
-                }}
-              >
-                🗑️
+        {/* RIGHT - FORM BUILDER */}
+        <div className="create-form-builder">
+          <div className="form-builder-header">
+            <h2>{formName || 'Untitled Template'}</h2>
+            <div className="form-actions">
+              <input
+                type="text"
+                value={formName}
+                onChange={(e) => setFormName(e.target.value)}
+                placeholder="Template Name"
+                className="template-name-input"
+              />
+              <button className="save-template-btn" onClick={saveForm}>
+                💾 Save Template
               </button>
             </div>
           </div>
-        ))}
 
+          {/* Form Area */}
+          <div className="form-area" onDragOver={onDragOver} onDrop={onDrop}>
+            {formFields.length === 0 ? (
+              <div className="empty-form-area">
+                <div className="empty-icon">📝</div>
+                <h3>Start Building Your Form</h3>
+                <p>Drag components from the left panel to begin creating your fertility form template</p>
+                <div className="drag-hint">
+                  <p>💡 <strong>Tip:</strong> You can also click on the Templates tab to load and edit existing templates</p>
+                </div>
+              </div>
+            ) : (
+              <div className="form-fields-container">
+                {formFields.map((field, index) => (
+                  <div
+                    key={field.id}
+                    className={`form-field ${selectedField?.id === field.id ? 'selected' : ''}`}
+                    onClick={() => setSelectedField(field)}
+                  >
+                    <div className="field-header">
+                      <span className="field-type">{field.type}</span>
+                      <span className="field-label">{field.label}</span>
+                      <button 
+                        className="remove-field-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteField(field.id);
+                        }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                    <div className="field-content">
+                      {field.type === 'text' && (
+                        <input
+                          type="text"
+                          placeholder={field.placeholder || field.label}
+                          className="field-input"
+                          readOnly
+                        />
+                      )}
+                      {field.type === 'date' && (
+                        <input
+                          type="date"
+                          className="field-input"
+                          readOnly
+                        />
+                      )}
+                      {field.type === 'textarea' && (
+                        <textarea
+                          placeholder={field.placeholder || field.label}
+                          className="field-textarea"
+                          rows="3"
+                          readOnly
+                        />
+                      )}
+                      {field.type === 'dropdown' && (
+                        <select className="field-select" readOnly>
+                          <option>{field.label}</option>
+                        </select>
+                      )}
+                      {field.type === 'number' && (
+                        <input
+                          type="number"
+                          placeholder={field.placeholder || field.label}
+                          className="field-input"
+                          readOnly
+                        />
+                      )}
+                      {field.type === 'email' && (
+                        <input
+                          type="email"
+                          placeholder={field.placeholder || field.label}
+                          className="field-input"
+                          readOnly
+                        />
+                      )}
+                      {field.type === 'submit' && (
+                        <button className="field-submit" disabled>
+                          {field.label}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* RIGHT PANEL – PROPERTIES */}
-      <div className="properties-panel">
-        <div className="panel-header">
-          <h3>PROPERTIES</h3>
-          <button className="back-to-dashboard-btn" onClick={() => window.location.hash = '#fertility'}>
-            ← Fertility
-          </button>
-        </div>
-        {selectedField ? (
+      {/* Field Properties Panel */}
+      {selectedField && (
+        <div className="field-properties-panel">
+          <div className="properties-header">
+            <h3>Field Properties</h3>
+            <button 
+              className="close-properties-btn"
+              onClick={() => setSelectedField(null)}
+            >
+              ✕
+            </button>
+          </div>
           <div className="properties-content">
             <div className="property-group">
-              <label>Title</label>
-              <input
-                type="text"
-                value={selectedField.title}
-                onChange={(e) => {
-                  const updated = { ...selectedField, title: e.target.value };
-                  setSelectedField(updated);
-                }}
-              />
-            </div>
-
-            <div className="property-group">
-              <label>Label Text</label>
+              <label>Field Label</label>
               <input
                 type="text"
                 value={selectedField.label}
-                onChange={(e) => {
-                  const updated = { ...selectedField, label: e.target.value };
-                  setSelectedField(updated);
-                }}
+                onChange={(e) => updateField(selectedField.id, { label: e.target.value })}
+                className="property-input"
               />
             </div>
-
             <div className="property-group">
-              <label>Background Color</label>
+              <label>Placeholder</label>
               <input
-                type="color"
-                value={selectedField.backgroundColor}
-                onChange={(e) => {
-                  const updated = { ...selectedField, backgroundColor: e.target.value };
-                  setSelectedField(updated);
-                }}
+                type="text"
+                value={selectedField.placeholder || ''}
+                onChange={(e) => updateField(selectedField.id, { placeholder: e.target.value })}
+                className="property-input"
               />
             </div>
-
             <div className="property-group">
-              <label>Text Color</label>
-              <input
-                type="color"
-                value={selectedField.textColor}
-                onChange={(e) => {
-                  const updated = { ...selectedField, textColor: e.target.value };
-                  setSelectedField(updated);
-                }}
-              />
-            </div>
-
-            <div className="property-group">
-              <label>Font Size</label>
+              <label>Field Type</label>
               <select
-                value={selectedField.fontSize}
-                onChange={(e) => {
-                  const updated = { ...selectedField, fontSize: e.target.value };
-                  setSelectedField(updated);
-                }}
+                value={selectedField.type}
+                onChange={(e) => updateField(selectedField.id, { type: e.target.value })}
+                className="property-select"
               >
-                <option value="12px">12px</option>
-                <option value="14px">14px</option>
-                <option value="16px">16px</option>
-                <option value="18px">18px</option>
-                <option value="20px">20px</option>
+                <option value="text">Text</option>
+                <option value="date">Date</option>
+                <option value="textarea">Textarea</option>
+                <option value="dropdown">Dropdown</option>
+                <option value="number">Number</option>
+                <option value="email">Email</option>
+                <option value="submit">Submit Button</option>
               </select>
             </div>
-
             <div className="property-group">
-              <label>Font Weight</label>
-              <select
-                value={selectedField.fontWeight}
-                onChange={(e) => {
-                  const updated = { ...selectedField, fontWeight: e.target.value };
-                  setSelectedField(updated);
-                }}
-              >
-                <option value="normal">Normal</option>
-                <option value="bold">Bold</option>
-              </select>
+              <label>Required</label>
+              <input
+                type="checkbox"
+                checked={selectedField.required || false}
+                onChange={(e) => updateField(selectedField.id, { required: e.target.checked })}
+                className="property-checkbox"
+              />
             </div>
-
-            <div className="property-group">
-              <label>Border Radius</label>
-              <select
-                value={selectedField.borderRadius}
-                onChange={(e) => {
-                  const updated = { ...selectedField, borderRadius: e.target.value };
-                  setSelectedField(updated);
-                }}
-              >
+            <button 
+              className="save-field-btn"
+              onClick={() => {
+                updateField(selectedField.id, selectedField);
+                setSelectedField(null);
+              }}
+            >
+              Save Changes
+            </button>
                 <option value="0px">0px</option>
                 <option value="4px">4px</option>
                 <option value="6px">6px</option>
