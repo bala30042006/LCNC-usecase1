@@ -5,7 +5,7 @@ import '../styles/FormBuilder.css';
 const FertilityCreatePage = () => {
   const [formFields, setFormFields] = useState([]);
   const [selectedField, setSelectedField] = useState(null);
-  const [formName, setFormName] = useState('Fertility Registration Form');
+  const [formName, setFormName] = useState('Fertility Form Template');
   const [savedForms, setSavedForms] = useState([]);
   const [activeTab, setActiveTab] = useState('components');
 
@@ -94,26 +94,50 @@ const FertilityCreatePage = () => {
       return;
     }
 
+    // Create template structure
+    const template = {
+      id: Date.now().toString(),
+      name: formName,
+      sections: [
+        {
+          id: 'main-section',
+          title: formName,
+          fields: formFields.map((field, index) => ({
+            id: field.id || `field_${index}`,
+            label: field.label,
+            type: field.type,
+            required: field.required || false,
+            placeholder: field.placeholder || '',
+            options: field.options || []
+          }))
+        }
+      ],
+      createdAt: new Date().toISOString()
+    };
+    
+    // Get existing templates from fertilityTemplates storage
+    const existingTemplates = JSON.parse(localStorage.getItem('fertilityTemplates') || '[]');
+    existingTemplates.push(template);
+    
+    // Save to fertilityTemplates storage (used by Edit Template page)
+    localStorage.setItem('fertilityTemplates', JSON.stringify(existingTemplates));
+    
+    // Also save to fertilitySavedForms for backward compatibility
+    const savedForms = JSON.parse(localStorage.getItem('fertilitySavedForms') || '[]');
     const formData = {
-      id: Date.now(),
+      id: Date.now().toString(),
       name: formName,
       fields: formFields,
       createdAt: new Date().toISOString()
     };
-    
-    // Get existing forms from localStorage
-    const existingForms = JSON.parse(localStorage.getItem('fertilitySavedForms') || '[]');
-    existingForms.push(formData);
-    
-    // Save to localStorage
-    localStorage.setItem('fertilitySavedForms', JSON.stringify(existingForms));
+    savedForms.push(formData);
+    localStorage.setItem('fertilitySavedForms', JSON.stringify(savedForms));
     localStorage.setItem('fertilityFormStructure', JSON.stringify(formFields));
     
     // Update local state
-    setSavedForms(existingForms);
+    setSavedForms(savedForms);
     
-    alert('Fertility form saved successfully! You can now fill it in the Fill Form page.');
-    window.location.hash = '#fertility-fill';
+    alert(`Form "${formName}" saved as template and is now available in Edit Template page!`);
   };
 
   const saveField = () => {
@@ -265,8 +289,9 @@ const FertilityCreatePage = () => {
       {/* CENTER – FORM AREA */}
       <div className="form-area" onDragOver={onDragOver} onDrop={onDrop}>
         <div className="form-builder-header">
-          <div className="form-title-section">
-            <h1>Fertility Form Builder</h1>
+          <div className="form-builder-header">
+            <h2>Create Fertility Form Template</h2>
+            <p>Build custom fertility form templates by dragging and dropping fields</p>
           </div>
           <div className="form-actions-top">
             <input
@@ -277,7 +302,7 @@ const FertilityCreatePage = () => {
               className="form-name-input"
             />
             <button className="save-form-button" onClick={saveForm}>
-              Save Form
+              Save as Template
             </button>
           </div>
         </div>
