@@ -464,15 +464,13 @@ const FertilityCreatePage = () => {
                 className="property-checkbox"
               />
             </div>
-            <button 
-              className="save-field-btn"
-              onClick={() => {
-                updateField(selectedField.id, selectedField);
-                setSelectedField(null);
-              }}
-            >
-              Save Changes
-            </button>
+            <div className="property-group">
+              <label>Padding</label>
+              <select
+                value={selectedField.padding || '0px'}
+                onChange={(e) => updateField(selectedField.id, { padding: e.target.value })}
+                className="property-select"
+              >
                 <option value="0px">0px</option>
                 <option value="4px">4px</option>
                 <option value="6px">6px</option>
